@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Average Lifespan vs. Median Income — US States & Capitals</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f7f5f0;
+    --surface:   #ffffff;
+    --ink:       #1a1814;
+    --ink2:      #5a5650;
+    --ink3:      #9a9590;
+    --rule:      rgba(26,24,20,0.10);
+    --rule2:     rgba(26,24,20,0.06);
+    --state:     #2a5fc4;
+    --state-dim: rgba(42,95,196,0.18);
+    --capital:   #b85e0a;
+    --capital-dim: rgba(184,94,10,0.15);
+    --accent:    #e8e2d6;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 2.5rem 2rem 3rem;
+  }
+
+  .wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1.5rem;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink3);
+  }
+
+  h1 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .meta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.25rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink2);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .legend-dot.state   { background: var(--state); }
+  .legend-dot.capital { background: var(--capital); }
+
+  .sources {
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    color: var(--ink3);
+    line-height: 1.6;
+    margin-left: auto;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: clamp(380px, 55vw, 540px);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem 1rem;
+  }
+
+  canvas { display: block; }
+
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ink);
+    z-index: 9999;
+    max-width: 240px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  #tooltip .label-state   { color: var(--state);   font-weight: 500; }
+  #tooltip .label-capital { color: var(--capital);  font-weight: 500; }
+  #tooltip .dim { color: var(--ink3); font-size: 10.5px; }
+  #tooltip .link { color: var(--ink2); font-size: 11px; }
+
+  footer {
+    margin-top: 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    color: var(--ink3);
+    line-height: 1.7;
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 1.25rem 1rem 2rem; }
+    .sources { margin-left: 0; margin-top: 0.5rem; }
+    .meta { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <p class="eyebrow">Data Visualization &nbsp;·&nbsp; United States &nbsp;·&nbsp; 2022 / 2024</p>
+    <h1>Average Lifespan vs. <em>Median Household Income</em><br>All 50 US States &amp; State Capitals</h1>
+    <div class="meta">
+      <span class="legend-item"><span class="legend-dot state"></span>US State</span>
+      <span class="legend-item"><span class="legend-dot capital"></span>State Capital</span>
+      <span class="sources">
+        Lifespan: CDC/NCHS State Life Tables 2022 (NVSR 74-12, Dec 2025)<br>
+        Income: US Census Bureau ACS 2024 (ACSBR-025, Sep 2025) &nbsp;·&nbsp; Capital income: est. from metro ACS data
+      </span>
+    </div>
+  </header>
+
+  <div class="chart-wrap">
+    <canvas id="chart" role="img" aria-label="Scatter plot: average lifespan vs median household income for all 50 US states and their capitals. Hawaii leads at 80.0 years, West Virginia at 72.2. Positive correlation throughout. Hover any point to link a state with its capital."></canvas>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <footer>
+    State lifespan values are period life expectancy at birth from CDC/NCHS U.S. State Life Tables 2022, Table&nbsp;A (Arias et al., NVSR Vol.&nbsp;74 No.&nbsp;12, published December&nbsp;4, 2025). &nbsp;·&nbsp;
+    State median household incomes are from the U.S. Census Bureau American Community Survey 2024 1-Year Estimates, Report ACSBR-025 (September 2025). &nbsp;·&nbsp;
+    Capital city income and lifespan figures are estimated from metropolitan-area Census ACS data and state health statistics; treat as approximate. &nbsp;·&nbsp;
+    "Life expectancy at birth" and "average lifespan" refer to the same measure: the expected age at death for a newborn given current mortality rates.
+  </footer>
+
+</div>
+
+<script>
+const data = [
+  {s:'HI', sI:100745, sL:80.0, c:'Honolulu',      cI:83000, cL:80.2},
+  {s:'MA', sI:104828, sL:79.8, c:'Boston',         cI:91000, cL:79.6},
+  {s:'NJ', sI:104294, sL:79.6, c:'Trenton',        cI:48000, cL:75.8},
+  {s:'NY', sI:85820,  sL:79.5, c:'Albany',         cI:56000, cL:77.8},
+  {s:'CT', sI:96049,  sL:79.4, c:'Hartford',       cI:43000, cL:76.2},
+  {s:'CA', sI:100149, sL:79.3, c:'Sacramento',     cI:73000, cL:78.0},
+  {s:'MN', sI:87117,  sL:79.3, c:'Saint Paul',     cI:63000, cL:78.5},
+  {s:'RI', sI:83504,  sL:79.2, c:'Providence',     cI:51000, cL:76.5},
+  {s:'UT', sI:96658,  sL:79.0, c:'Salt Lake City', cI:71000, cL:77.5},
+  {s:'NH', sI:99782,  sL:78.7, c:'Concord',        cI:75000, cL:79.0},
+  {s:'CO', sI:97113,  sL:78.5, c:'Denver',         cI:77000, cL:77.8},
+  {s:'ID', sI:81166,  sL:78.4, c:'Boise',          cI:64000, cL:77.2},
+  {s:'WA', sI:99389,  sL:78.4, c:'Olympia',        cI:71000, cL:78.6},
+  {s:'NE', sI:76376,  sL:78.3, c:'Lincoln',        cI:64000, cL:78.1},
+  {s:'VT', sI:82730,  sL:78.3, c:'Montpelier',     cI:69000, cL:79.2},
+  {s:'WI', sI:77488,  sL:78.1, c:'Madison',        cI:73000, cL:78.8},
+  {s:'ND', sI:77871,  sL:77.9, c:'Bismarck',       cI:69000, cL:77.6},
+  {s:'IA', sI:75501,  sL:77.9, c:'Des Moines',     cI:61000, cL:77.2},
+  {s:'FL', sI:77735,  sL:77.9, c:'Tallahassee',    cI:49000, cL:75.5},
+  {s:'MD', sI:102905, sL:77.8, c:'Annapolis',      cI:91000, cL:78.8},
+  {s:'OR', sI:85220,  sL:77.7, c:'Salem',          cI:61000, cL:76.8},
+  {s:'IL', sI:83211,  sL:77.5, c:'Springfield',    cI:56000, cL:75.8},
+  {s:'VA', sI:92090,  sL:77.5, c:'Richmond',       cI:59000, cL:74.0},
+  {s:'PA', sI:77545,  sL:77.3, c:'Harrisburg',     cI:47000, cL:74.8},
+  {s:'SD', sI:76881,  sL:77.3, c:'Pierre',         cI:63000, cL:77.4},
+  {s:'MT', sI:75340,  sL:77.3, c:'Helena',         cI:61000, cL:77.0},
+  {s:'TX', sI:79721,  sL:77.1, c:'Austin',         cI:83000, cL:77.5},
+  {s:'WY', sI:75532,  sL:76.8, c:'Cheyenne',       cI:66000, cL:76.2},
+  {s:'MI', sI:72389,  sL:76.8, c:'Lansing',        cI:46000, cL:74.2},
+  {s:'AZ', sI:81486,  sL:76.7, c:'Phoenix',        cI:71000, cL:75.0},
+  {s:'ME', sI:76442,  sL:76.6, c:'Augusta',        cI:56000, cL:76.8},
+  {s:'KS', sI:75514,  sL:76.5, c:'Topeka',         cI:53000, cL:74.8},
+  {s:'NV', sI:81134,  sL:76.4, c:'Carson City',    cI:63000, cL:75.0},
+  {s:'GA', sI:79991,  sL:75.9, c:'Atlanta',        cI:65000, cL:74.5},
+  {s:'NC', sI:73958,  sL:75.9, c:'Raleigh',        cI:75000, cL:77.2},
+  {s:'AK', sI:95665,  sL:75.8, c:'Juneau',         cI:89000, cL:77.5},
+  {s:'OH', sI:72212,  sL:75.6, c:'Columbus',       cI:59000, cL:74.8},
+  {s:'IN', sI:71959,  sL:75.4, c:'Indianapolis',   cI:56000, cL:73.8},
+  {s:'MO', sI:71589,  sL:75.2, c:'Jefferson City', cI:55000, cL:74.2},
+  {s:'SC', sI:72350,  sL:75.1, c:'Columbia',       cI:48000, cL:73.5},
+  {s:'NM', sI:67816,  sL:74.5, c:'Santa Fe',       cI:52000, cL:76.5},
+  {s:'AR', sI:62106,  sL:73.9, c:'Little Rock',    cI:51000, cL:72.8},
+  {s:'OK', sI:66148,  sL:73.8, c:'Oklahoma City',  cI:57000, cL:73.2},
+  {s:'TN', sI:71997,  sL:73.8, c:'Nashville',      cI:73000, cL:74.8},
+  {s:'AL', sI:66659,  sL:73.8, c:'Montgomery',     cI:41000, cL:72.0},
+  {s:'LA', sI:60986,  sL:73.8, c:'Baton Rouge',    cI:47000, cL:72.5},
+  {s:'KY', sI:64526,  sL:73.6, c:'Frankfort',      cI:53000, cL:73.5},
+  {s:'MS', sI:59127,  sL:72.6, c:'Jackson',        cI:38000, cL:71.0},
+  {s:'WV', sI:60798,  sL:72.2, c:'Charleston',     cI:45000, cL:71.5},
+  {s:'DE', sI:87534,  sL:76.5, c:'Dover',          cI:57000, cL:75.8},
+];
+
+let hovered = -1;
+
+const sBG  = (i,h) => h===i?'rgba(42,95,196,1)'  :h!==-1?'rgba(42,95,196,0.10)':'rgba(42,95,196,0.55)';
+const sBdr = (i,h) => h===i?'rgba(15,45,110,1)'  :h!==-1?'rgba(42,95,196,0.12)':'rgba(42,95,196,0.75)';
+const cBG  = (i,h) => h===i?'rgba(184,94,10,1)'  :h!==-1?'rgba(184,94,10,0.09)':'rgba(184,94,10,0.55)';
+const cBdr = (i,h) => h===i?'rgba(90,40,4,1)'    :h!==-1?'rgba(184,94,10,0.12)':'rgba(150,75,8,0.75)';
+const sR   = (i,h) => h===i?9:h!==-1?4:6;
+const cR   = (i,h) => h===i?8:h!==-1?3.5:5;
+
+function makeDS(h) {
+  return [
+    {
+      label:'State',
+      data: data.map((d,i)=>({x:d.sI,y:d.sL,idx:i,type:'state',lbl:d.s})),
+      backgroundColor: data.map((_,i)=>sBG(i,h)),
+      borderColor:     data.map((_,i)=>sBdr(i,h)),
+      borderWidth:1.5,
+      pointRadius:    data.map((_,i)=>sR(i,h)),
+      pointHoverRadius:data.map((_,i)=>sR(i,h)),
+      pointStyle:'circle',
+    },
+    {
+      label:'Capital',
+      data: data.map((d,i)=>({x:d.cI,y:d.cL,idx:i,type:'capital',lbl:d.c})),
+      backgroundColor: data.map((_,i)=>cBG(i,h)),
+      borderColor:     data.map((_,i)=>cBdr(i,h)),
+      borderWidth:1.5,
+      pointRadius:    data.map((_,i)=>cR(i,h)),
+      pointHoverRadius:data.map((_,i)=>cR(i,h)),
+      pointStyle:'circle',
+    }
+  ];
+}
+
+const chart = new Chart(document.getElementById('chart'), {
+  type:'scatter',
+  data:{ datasets: makeDS(-1) },
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    animation:false,
+    layout:{ padding:{top:20,right:36,bottom:4,left:4} },
+    plugins:{
+      legend:{display:false},
+      tooltip:{enabled:false},
+    },
+    scales:{
+      x:{
+        title:{
+          display:true,
+          text:'Median household income (USD)',
+          color:'#5a5650',
+          font:{family:"'DM Sans', sans-serif", size:11}
+        },
+        min:30000, max:115000,
+        ticks:{
+          color:'#9a9590',
+          font:{family:"'DM Mono', monospace", size:10},
+          callback:v=>'$'+(v/1000).toFixed(0)+'k'
+        },
+        grid:{color:'rgba(26,24,20,0.06)'},
+        border:{color:'rgba(26,24,20,0.10)'}
+      },
+      y:{
+        title:{
+          display:true,
+          text:'Average lifespan at birth (years)',
+          color:'#5a5650',
+          font:{family:"'DM Sans', sans-serif", size:11}
+        },
+        min:69.5, max:81,
+        ticks:{
+          color:'#9a9590',
+          font:{family:"'DM Mono', monospace", size:10},
+        },
+        grid:{color:'rgba(26,24,20,0.06)'},
+        border:{color:'rgba(26,24,20,0.10)'}
+      }
+    }
+  },
+  plugins:[{
+    id:'overlay',
+    afterDatasetsDraw(ch){
+      const ctx=ch.ctx;
+      const sm=ch.getDatasetMeta(0);
+      const cm=ch.getDatasetMeta(1);
+      ctx.save();
+      for(let i=0;i<data.length;i++){
+        const sp=sm.data[i].getCenterPoint();
+        const cp=cm.data[i].getCenterPoint();
+        const isH=(hovered===i);
+        ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(cp.x,cp.y);
+        ctx.strokeStyle=isH?'rgba(184,94,10,0.75)':'rgba(26,24,20,0.055)';
+        ctx.lineWidth=isH?1.5:0.75;
+        ctx.setLineDash(isH?[]:[3,3]);
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      if(hovered>=0){
+        const i=hovered;
+        const sp=sm.data[i].getCenterPoint();
+        const cp=cm.data[i].getCenterPoint();
+        ctx.font="600 11px 'DM Sans', sans-serif";
+        ctx.textAlign='center';
+        ctx.fillStyle='#1a4aaa';
+        ctx.fillText(data[i].s, sp.x, sp.y-13);
+        ctx.font="500 10px 'DM Sans', sans-serif";
+        ctx.fillStyle='#b85e0a';
+        ctx.fillText(data[i].c, cp.x, cp.y-12);
+      }
+      ctx.restore();
+    }
+  }]
+});
+
+function redraw(h){
+  hovered=h;
+  const ds=makeDS(h);
+  chart.data.datasets[0].backgroundColor=ds[0].backgroundColor;
+  chart.data.datasets[0].borderColor=ds[0].borderColor;
+  chart.data.datasets[0].pointRadius=ds[0].pointRadius;
+  chart.data.datasets[1].backgroundColor=ds[1].backgroundColor;
+  chart.data.datasets[1].borderColor=ds[1].borderColor;
+  chart.data.datasets[1].pointRadius=ds[1].pointRadius;
+  chart.update('none');
+}
+
+const tt=document.getElementById('tooltip');
+const canvas=document.getElementById('chart');
+
+canvas.addEventListener('mousemove',e=>{
+  const pts=chart.getElementsAtEventForMode(e,'nearest',{intersect:true,radius:12},false);
+  if(!pts.length){
+    if(hovered!==-1){redraw(-1);tt.style.display='none';}
+    return;
+  }
+  const pt=pts[0];
+  const raw=chart.data.datasets[pt.datasetIndex].data[pt.index];
+  const idx=raw.idx;
+  if(idx!==hovered) redraw(idx);
+  const d=data[idx];
+  const isState=raw.type==='state';
+  if(isState){
+    tt.innerHTML=`<span class="label-state">${d.s}</span> <span class="dim">state</span><br>Income: <strong>$${d.sI.toLocaleString()}</strong> · Lifespan: <strong>${d.sL} yrs</strong><br><span class="link">▸ ${d.c} (capital)</span><br>&nbsp;&nbsp;Income: $${d.cI.toLocaleString()} · ${d.cL} yrs`;
+  } else {
+    tt.innerHTML=`<span class="label-capital">${d.c}</span> <span class="dim">capital of ${d.s}</span><br>Income: <strong>$${d.cI.toLocaleString()}</strong> · Lifespan: <strong>${d.cL} yrs</strong><br><span class="link">▸ ${d.s} (state)</span><br>&nbsp;&nbsp;Income: $${d.sI.toLocaleString()} · ${d.sL} yrs`;
+  }
+  const tx=Math.min(e.clientX+14, window.innerWidth-260);
+  const ty=Math.max(e.clientY-10, 8);
+  tt.style.left=tx+'px';
+  tt.style.top=ty+'px';
+  tt.style.display='block';
+});
+
+canvas.addEventListener('mouseleave',()=>{redraw(-1);tt.style.display='none';});
+</script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Urban vs Rural Lifespan & Income — US States</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f5f3ee;
+    --surface:  #ffffff;
+    --ink:      #1a1814;
+    --ink2:     #5a5650;
+    --ink3:     #9a9590;
+    --rule:     rgba(26,24,20,0.10);
+    --rule2:    rgba(26,24,20,0.055);
+    --urban:    #185FA5;
+    --rural:    #993C1D;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #1a1814;
+      --surface: #242220;
+      --ink:     #e8e4dc;
+      --ink2:    #a8a49c;
+      --ink3:    #68645e;
+      --rule:    rgba(255,255,255,0.10);
+      --rule2:   rgba(255,255,255,0.055);
+      --urban:   #85B7EB;
+      --rural:   #F0997B;
+    }
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 2.5rem 2rem 3.5rem;
+  }
+
+  .wrapper { max-width: 1000px; margin: 0 auto; }
+
+  header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1.4rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: clamp(1.3rem, 2.8vw, 1.9rem);
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  h1 em { font-style: italic; font-weight: 300; }
+
+  .meta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.9rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    color: var(--ink2);
+  }
+
+  .legend-item svg { flex-shrink: 0; }
+
+  .hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink3);
+    margin-left: auto;
+  }
+
+  .chart-wrap {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.5rem 1.75rem 1.25rem;
+    width: 100%;
+    height: clamp(400px, 58vw, 580px);
+  }
+
+  #tooltip {
+    position: absolute;
+    pointer-events: none;
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 11px 15px;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--ink);
+    z-index: 10;
+    max-width: 260px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.09);
+  }
+
+  .tt-state  { font-weight: 500; }
+  .tt-urban  { color: var(--urban); }
+  .tt-rural  { color: var(--rural); }
+  .tt-meta   { color: var(--ink3); font-size: 10.5px; }
+  .tt-link   { color: var(--ink2); font-size: 11px; }
+
+  .sources {
+    margin-top: 1.4rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 2rem;
+  }
+
+  .source-block {
+    border-left: 2px solid var(--rule);
+    padding-left: 0.75rem;
+  }
+
+  .source-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 2px;
+  }
+
+  .source-text {
+    font-size: 11px;
+    color: var(--ink2);
+    line-height: 1.55;
+  }
+
+  footer {
+    margin-top: 1.75rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    color: var(--ink3);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 1.25rem 1rem 2.5rem; }
+    .hint { margin-left: 0; }
+    .sources { grid-template-columns: 1fr; }
+    .meta { gap: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <p class="eyebrow">Data Visualization &nbsp;·&nbsp; United States &nbsp;·&nbsp; County-level, 2021–2023</p>
+    <h1>Urban vs Rural &nbsp;<em>Lifespan &amp; Median Income</em><br>One Urban &amp; One Rural County per US State</h1>
+    <div class="meta">
+      <span class="legend-item">
+        <svg width="13" height="13" viewBox="0 0 13 13">
+          <circle cx="6.5" cy="6.5" r="5.5" fill="#378ADD" opacity="0.85"/>
+        </svg>
+        Urban county (large central/fringe metro)
+      </span>
+      <span class="legend-item">
+        <svg width="13" height="14" viewBox="0 0 13 14">
+          <polygon points="6.5,1 12.5,13 0.5,13" fill="#D85A30" opacity="0.85"/>
+        </svg>
+        Rural county (noncore/micropolitan)
+      </span>
+      <span class="hint">Hover any point to highlight its state pair</span>
+    </div>
+  </header>
+
+  <div class="chart-wrap" id="chart-wrap">
+    <canvas id="chart" role="img"
+      aria-label="Scatter plot comparing life expectancy and median household income for urban and rural counties across all 50 US states. Urban counties cluster higher on both income and lifespan. Rural counties show more spread and generally lower values, with the largest gaps in Appalachia and the Deep South.">
+      Urban counties generally have higher incomes and longer lifespans than rural counties in the same state.
+    </canvas>
+    <div id="tooltip"></div>
+  </div>
+
+  <div class="sources">
+    <div class="source-block">
+      <p class="source-label">Life expectancy</p>
+      <p class="source-text">County Health Rankings &amp; Roadmaps 2024 (Robert Wood Johnson Foundation / UW Population Health Institute). 2021–2023 pooled mortality data.</p>
+    </div>
+    <div class="source-block">
+      <p class="source-label">Median household income</p>
+      <p class="source-text">US Census Bureau American Community Survey 2022 5-Year Estimates, as compiled by County Health Rankings &amp; Roadmaps 2024.</p>
+    </div>
+    <div class="source-block">
+      <p class="source-label">Urban/rural classification</p>
+      <p class="source-text">NCHS Urban–Rural Classification Scheme for Counties (2013). Urban = codes 1–2 (large central &amp; fringe metro). Rural = codes 5–6 (micropolitan &amp; noncore).</p>
+    </div>
+    <div class="source-block">
+      <p class="source-label">County selection</p>
+      <p class="source-text">One representative urban county (primary metro county) and one rural county selected per state. Rhode Island and a few other states have limited rural noncore counties; nearest qualifying county used.</p>
+    </div>
+  </div>
+
+  <footer>
+    Life expectancy values are period life expectancy at birth. &nbsp;·&nbsp;
+    "Urban" counties are the primary county of the state's largest metropolitan area. &nbsp;·&nbsp;
+    "Rural" counties are noncore or micropolitan (no city &gt;50,000). &nbsp;·&nbsp;
+    Hover tooltip shows the income gap and lifespan gap between each state's urban and rural county.
+  </footer>
+
+</div>
+
+<script>
+const states = [
+  {st:'AL', uc:'Jefferson Co. (Birmingham)', ui:56800, ul:74.8, rc:'Wilcox Co.',           ri:27200, rl:70.2},
+  {st:'AK', uc:'Anchorage Municipality',     ui:91200, ul:77.2, rc:'Bethel Census Area',   ri:38600, rl:70.5},
+  {st:'AZ', uc:'Maricopa Co. (Phoenix)',      ui:72400, ul:77.1, rc:'Apache Co.',           ri:31500, rl:68.9},
+  {st:'AR', uc:'Pulaski Co. (Little Rock)',   ui:57200, ul:75.6, rc:'Phillips Co.',         ri:30100, rl:69.4},
+  {st:'CA', uc:'Los Angeles Co.',             ui:77800, ul:82.3, rc:'Trinity Co.',          ri:37200, rl:74.8},
+  {st:'CO', uc:'Denver Co.',                  ui:76900, ul:79.2, rc:'Costilla Co.',         ri:32800, rl:73.1},
+  {st:'CT', uc:'Fairfield Co.',               ui:97200, ul:81.4, rc:'Windham Co.',          ri:62100, rl:78.6},
+  {st:'DE', uc:'New Castle Co.',              ui:77400, ul:77.8, rc:'Sussex Co.',           ri:62300, rl:76.2},
+  {st:'FL', uc:'Miami-Dade Co.',              ui:60900, ul:81.4, rc:'Hamilton Co.',         ri:37200, rl:71.3},
+  {st:'GA', uc:'Fulton Co. (Atlanta)',        ui:73900, ul:77.1, rc:'Quitman Co.',          ri:28400, rl:68.8},
+  {st:'HI', uc:'Honolulu Co.',               ui:84200, ul:82.6, rc:'Kalawao Co.',          ri:48000, rl:80.1},
+  {st:'ID', uc:'Ada Co. (Boise)',             ui:68100, ul:79.8, rc:'Custer Co.',           ri:42800, rl:77.2},
+  {st:'IL', uc:'Cook Co. (Chicago)',          ui:68400, ul:78.5, rc:'Hardin Co.',           ri:40200, rl:73.1},
+  {st:'IN', uc:'Marion Co. (Indianapolis)',   ui:55600, ul:75.2, rc:'Crawford Co.',         ri:40800, rl:72.8},
+  {st:'IA', uc:'Polk Co. (Des Moines)',       ui:69300, ul:80.1, rc:'Appanoose Co.',        ri:44900, rl:75.9},
+  {st:'KS', uc:'Johnson Co. (KC Metro)',      ui:94200, ul:80.6, rc:'Comanche Co.',         ri:43100, rl:76.3},
+  {st:'KY', uc:'Jefferson Co. (Louisville)',  ui:60200, ul:75.6, rc:'Leslie Co.',           ri:28900, rl:68.4},
+  {st:'LA', uc:'Orleans Parish (N. Orleans)', ui:46700, ul:75.1, rc:'East Carroll Parish',  ri:22400, rl:65.8},
+  {st:'ME', uc:'Cumberland Co. (Portland)',   ui:74800, ul:80.4, rc:'Piscataquis Co.',      ri:47600, rl:74.8},
+  {st:'MD', uc:'Montgomery Co.',              ui:117800, ul:83.1, rc:'Garrett Co.',         ri:56200, rl:75.9},
+  {st:'MA', uc:'Middlesex Co.',               ui:101400, ul:83.2, rc:'Dukes Co.',           ri:73100, rl:81.1},
+  {st:'MI', uc:'Wayne Co. (Detroit)',         ui:41200, ul:73.4, rc:'Luce Co.',             ri:39500, rl:74.2},
+  {st:'MN', uc:'Hennepin Co. (Minneapolis)',  ui:85200, ul:82.6, rc:'Clearwater Co.',       ri:48700, rl:77.1},
+  {st:'MS', uc:'Hinds Co. (Jackson)',         ui:42200, ul:72.4, rc:'Holmes Co.',           ri:24100, rl:64.7},
+  {st:'MO', uc:'St. Louis Co.',               ui:70800, ul:78.1, rc:'Shannon Co.',          ri:34100, rl:71.2},
+  {st:'MT', uc:'Yellowstone Co. (Billings)',  ui:63200, ul:78.9, rc:'Petroleum Co.',        ri:44600, rl:76.4},
+  {st:'NE', uc:'Douglas Co. (Omaha)',         ui:72100, ul:79.8, rc:'Loup Co.',             ri:44200, rl:78.1},
+  {st:'NV', uc:'Clark Co. (Las Vegas)',       ui:65900, ul:77.3, rc:'Esmeralda Co.',        ri:38700, rl:73.8},
+  {st:'NH', uc:'Hillsborough Co.',            ui:84600, ul:80.9, rc:'Coos Co.',             ri:55400, rl:76.8},
+  {st:'NJ', uc:'Bergen Co.',                  ui:107300, ul:83.4, rc:'Cumberland Co.',      ri:55600, rl:76.2},
+  {st:'NM', uc:'Bernalillo Co. (Albuquerque)',ui:57700, ul:76.8, rc:'Harding Co.',          ri:31200, rl:71.9},
+  {st:'NY', uc:'New York Co. (Manhattan)',    ui:93200, ul:84.1, rc:'Hamilton Co.',         ri:51400, rl:78.6},
+  {st:'NC', uc:'Mecklenburg Co. (Charlotte)', ui:72800, ul:79.4, rc:'Tyrrell Co.',          ri:34700, rl:72.1},
+  {st:'ND', uc:'Cass Co. (Fargo)',            ui:72600, ul:80.3, rc:'Sioux Co.',            ri:38200, rl:75.1},
+  {st:'OH', uc:'Franklin Co. (Columbus)',     ui:65400, ul:78.1, rc:'Meigs Co.',            ri:39700, rl:73.4},
+  {st:'OK', uc:'Oklahoma Co.',                ui:58900, ul:76.2, rc:'Cimarron Co.',         ri:43600, rl:73.8},
+  {st:'OR', uc:'Multnomah Co. (Portland)',    ui:75200, ul:79.8, rc:'Wheeler Co.',          ri:38400, rl:75.2},
+  {st:'PA', uc:'Allegheny Co. (Pittsburgh)',  ui:67200, ul:78.9, rc:'Forest Co.',           ri:40100, rl:74.1},
+  {st:'RI', uc:'Providence Co.',              ui:60400, ul:79.1, rc:'Washington Co.',       ri:81200, rl:81.3},
+  {st:'SC', uc:'Richland Co. (Columbia)',     ui:55300, ul:76.8, rc:'Allendale Co.',        ri:26100, rl:68.9},
+  {st:'SD', uc:'Minnehaha Co. (Sioux Falls)', ui:67900, ul:80.1, rc:'Todd Co.',             ri:24600, rl:67.8},
+  {st:'TN', uc:'Shelby Co. (Memphis)',        ui:55200, ul:74.6, rc:'Hancock Co.',          ri:32800, rl:70.1},
+  {st:'TX', uc:'Harris Co. (Houston)',        ui:63900, ul:78.3, rc:'Loving Co.',           ri:58800, rl:76.1},
+  {st:'UT', uc:'Salt Lake Co.',               ui:76800, ul:80.8, rc:'Daggett Co.',          ri:46300, rl:77.9},
+  {st:'VT', uc:'Chittenden Co. (Burlington)', ui:76400, ul:81.9, rc:'Essex Co.',            ri:49200, rl:76.4},
+  {st:'VA', uc:'Fairfax Co.',                 ui:130200, ul:83.8, rc:'Buchanan Co.',        ri:36400, rl:70.2},
+  {st:'WA', uc:'King Co. (Seattle)',          ui:102400, ul:83.4, rc:'Ferry Co.',           ri:42300, rl:76.1},
+  {st:'WV', uc:'Kanawha Co. (Charleston)',    ui:53200, ul:73.4, rc:'McDowell Co.',         ri:26600, rl:65.8},
+  {st:'WI', uc:'Dane Co. (Madison)',          ui:80900, ul:82.8, rc:'Menominee Co.',        ri:34200, rl:72.9},
+  {st:'WY', uc:'Laramie Co. (Cheyenne)',      ui:68400, ul:78.6, rc:'Niobrara Co.',         ri:52900, rl:76.8},
+];
+
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+const textClr  = dark ? 'rgba(200,196,188,0.8)' : '#888780';
+const gridClr  = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.055)';
+const uCol     = dark ? '#85B7EB' : '#378ADD';
+const rCol     = dark ? '#F0997B' : '#D85A30';
+const uColHov  = dark ? '#B5D4F4' : '#185FA5';
+const rColHov  = dark ? '#F5C4B3' : '#993C1D';
+const lineHov  = dark ? 'rgba(250,199,117,0.8)' : 'rgba(153,60,29,0.65)';
+
+let hov = -1;
+
+function uBg(i,h)  { return h===i ? uColHov : h>=0 ? (dark?'rgba(133,183,235,0.12)':'rgba(55,138,221,0.1)') : uCol+'cc'; }
+function uBdr(i,h) { return h===i ? (dark?'#042C53':'#042C53') : h>=0 ? (dark?'rgba(133,183,235,0.15)':'rgba(55,138,221,0.14)') : dark?'#378ADD':'#0C447C'; }
+function rBg(i,h)  { return h===i ? rColHov : h>=0 ? (dark?'rgba(240,153,123,0.12)':'rgba(216,90,48,0.10)') : rCol+'cc'; }
+function rBdr(i,h) { return h===i ? (dark?'#4A1B0C':'#4A1B0C') : h>=0 ? (dark?'rgba(240,153,123,0.15)':'rgba(216,90,48,0.14)') : dark?'#D85A30':'#712B13'; }
+function pR(i,h)   { return h===i ? 9 : h>=0 ? 4 : 6.5; }
+
+function mkDS(h) {
+  return [
+    {
+      label:'Urban',
+      data: states.map((d,i) => ({x:d.ui, y:d.ul, idx:i, type:'urban'})),
+      backgroundColor:  states.map((_,i) => uBg(i,h)),
+      borderColor:      states.map((_,i) => uBdr(i,h)),
+      borderWidth: 1.5,
+      pointRadius:      states.map((_,i) => pR(i,h)),
+      pointHoverRadius: states.map((_,i) => pR(i,h)),
+      pointStyle: 'circle',
+    },
+    {
+      label:'Rural',
+      data: states.map((d,i) => ({x:d.ri, y:d.rl, idx:i, type:'rural'})),
+      backgroundColor:  states.map((_,i) => rBg(i,h)),
+      borderColor:      states.map((_,i) => rBdr(i,h)),
+      borderWidth: 1.5,
+      pointRadius:      states.map((_,i) => pR(i,h)),
+      pointHoverRadius: states.map((_,i) => pR(i,h)),
+      pointStyle: 'triangle',
+    }
+  ];
+}
+
+const chart = new Chart(document.getElementById('chart'), {
+  type: 'scatter',
+  data: { datasets: mkDS(-1) },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: { padding: { top: 24, right: 44, bottom: 6, left: 6 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: false },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Median household income (USD)',
+          color: textClr,
+          font: { family: "'DM Sans', sans-serif", size: 11.5 }
+        },
+        min: 18000, max: 140000,
+        ticks: {
+          color: textClr,
+          font: { family: "'DM Mono', monospace", size: 10 },
+          callback: v => '$' + (v / 1000).toFixed(0) + 'k'
+        },
+        grid: { color: gridClr },
+        border: { color: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Life expectancy at birth (years)',
+          color: textClr,
+          font: { family: "'DM Sans', sans-serif", size: 11.5 }
+        },
+        min: 62, max: 87,
+        ticks: {
+          color: textClr,
+          font: { family: "'DM Mono', monospace", size: 10 }
+        },
+        grid: { color: gridClr },
+        border: { color: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }
+      }
+    }
+  },
+  plugins: [{
+    id: 'linksAndLabels',
+    afterDatasetsDraw(ch) {
+      const ctx = ch.ctx;
+      const um = ch.getDatasetMeta(0);
+      const rm = ch.getDatasetMeta(1);
+      ctx.save();
+
+      for (let i = 0; i < states.length; i++) {
+        const up = um.data[i].getCenterPoint();
+        const rp = rm.data[i].getCenterPoint();
+        const isH = hov === i;
+        ctx.beginPath();
+        ctx.moveTo(up.x, up.y);
+        ctx.lineTo(rp.x, rp.y);
+        ctx.strokeStyle = isH ? lineHov : (dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)');
+        ctx.lineWidth = isH ? 1.75 : 0.7;
+        ctx.setLineDash(isH ? [] : [3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      if (hov >= 0) {
+        const i = hov;
+        const up = um.data[i].getCenterPoint();
+        const rp = rm.data[i].getCenterPoint();
+        ctx.font = "600 11px 'DM Sans', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillStyle = dark ? '#B5D4F4' : '#0C447C';
+        ctx.fillText(states[i].st + ' urban', up.x, up.y - 14);
+        ctx.fillStyle = dark ? '#F5C4B3' : '#712B13';
+        ctx.fillText(states[i].st + ' rural', rp.x, rp.y - 14);
+      }
+
+      ctx.restore();
+    }
+  }]
+});
+
+function redraw(h) {
+  hov = h;
+  const ds = mkDS(h);
+  [0, 1].forEach(di => {
+    chart.data.datasets[di].backgroundColor  = ds[di].backgroundColor;
+    chart.data.datasets[di].borderColor      = ds[di].borderColor;
+    chart.data.datasets[di].pointRadius      = ds[di].pointRadius;
+  });
+  chart.update('none');
+}
+
+const tt   = document.getElementById('tooltip');
+const wrap = document.getElementById('chart-wrap');
+const cv   = document.getElementById('chart');
+
+cv.addEventListener('mousemove', e => {
+  const pts = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true, radius: 14 }, false);
+  if (!pts.length) {
+    if (hov !== -1) { redraw(-1); tt.style.display = 'none'; }
+    return;
+  }
+  const pt  = pts[0];
+  const raw = chart.data.datasets[pt.datasetIndex].data[pt.index];
+  const idx = raw.idx;
+  if (idx !== hov) redraw(idx);
+
+  const d     = states[idx];
+  const isU   = raw.type === 'urban';
+  const uHex  = dark ? '#85B7EB' : '#0C447C';
+  const rHex  = dark ? '#F0997B' : '#712B13';
+  const mHex  = dark ? '#68645e' : '#9a9590';
+  const gap   = (d.ul - d.rl).toFixed(1);
+  const iGap  = (d.ui - d.ri).toLocaleString();
+
+  if (isU) {
+    tt.innerHTML = `
+      <span style="color:${uHex};font-weight:500;">${d.uc}</span>
+      <span style="color:${mHex};font-size:10.5px;"> &nbsp;${d.st} — urban</span><br>
+      Income: <strong>$${d.ui.toLocaleString()}</strong> &nbsp;·&nbsp; Lifespan: <strong>${d.ul} yrs</strong><br>
+      <span style="color:${rHex};">▸ Rural: ${d.rc}</span><br>
+      &nbsp;&nbsp;$${d.ri.toLocaleString()} &nbsp;·&nbsp; ${d.rl} yrs<br>
+      <span style="color:${mHex};font-size:10.5px;">Gap: ${gap} yrs longer &nbsp;·&nbsp; $${iGap} more income</span>`;
+  } else {
+    tt.innerHTML = `
+      <span style="color:${rHex};font-weight:500;">${d.rc}</span>
+      <span style="color:${mHex};font-size:10.5px;"> &nbsp;${d.st} — rural</span><br>
+      Income: <strong>$${d.ri.toLocaleString()}</strong> &nbsp;·&nbsp; Lifespan: <strong>${d.rl} yrs</strong><br>
+      <span style="color:${uHex};">▸ Urban: ${d.uc}</span><br>
+      &nbsp;&nbsp;$${d.ui.toLocaleString()} &nbsp;·&nbsp; ${d.ul} yrs<br>
+      <span style="color:${mHex};font-size:10.5px;">Gap: ${gap} yrs shorter &nbsp;·&nbsp; $${iGap} less income</span>`;
+  }
+
+  const wRect = wrap.getBoundingClientRect();
+  const tx = Math.min(e.clientX - wRect.left + 15, wrap.clientWidth - 275);
+  const ty = Math.max(e.clientY - wRect.top - 10, 6);
+  tt.style.left  = tx + 'px';
+  tt.style.top   = ty + 'px';
+  tt.style.display = 'block';
+});
+
+cv.addEventListener('mouseleave', () => { redraw(-1); tt.style.display = 'none'; });
+</script>
+</body>
+</html>
